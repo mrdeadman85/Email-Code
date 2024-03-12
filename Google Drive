@@ -1,0 +1,56 @@
+import re
+import csv
+from pydrive.auth import GoogleAuth
+from pydrive.drive import GoogleDrive
+from io import BytesIO
+
+def authenticate_google_drive():
+    gauth = GoogleAuth()
+    gauth.LocalWebserverAuth()  # Creates local webserver and handles authentication.
+    drive = GoogleDrive(gauth)
+    return drive
+
+def extract_emails(text):
+    # Regular expression to match email addresses
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    return re.findall(email_pattern, text)
+
+def create_csv(emails, output_filename='email_addresses.csv'):
+    # Writing email addresses to a CSV file
+    with open(output_filename, 'w', newline='') as csvfile:
+        fieldnames = ['Email Addresses']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        # Write header
+        writer.writeheader()
+
+        # Write email addresses
+        for email in emails:
+            writer.writerow({'Email Addresses': email})
+
+def main():
+    try:
+        # Authenticate with Google Drive
+        drive = authenticate_google_drive()
+
+        # Replace 'YOUR_FILE_ID' with the actual file ID from your Google Drive
+        file_id = 'https://docs.google.com/spreadsheets/d/1I1u-F3vUqxKNlSkR3isT2AVSXvf-4tKUan6z_F82yNo/edit#gid=0'
+
+        # Download the file content
+        file_content = drive.CreateFile({'id': file_id}).GetContentString()
+
+        # Extract email addresses from the document
+        extracted_emails = extract_emails(file_content)
+
+        if extracted_emails:
+            # Create CSV file
+            create_csv(extracted_emails)
+            print('Email addresses successfully extracted and saved to email_addresses.csv.')
+        else:
+            print('No email addresses found in the document.')
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+if __name__ == "__main__":
+    main()
